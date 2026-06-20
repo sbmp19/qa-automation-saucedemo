@@ -1,5 +1,6 @@
 """Tests automatizados para saucedemo.com con Playwright + pytest."""
 
+import pytest
 
 # ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -13,14 +14,26 @@ def texto_error(page):
     return page.text_content('[data-test="error"]')
 
 
-# ─── Test 1: Producto al carrito ────────────────────────────────────────────────
+# ─── Test 1: Login data-driven ──────────────────────────────────────────────────
 
-def test_agregar_producto_al_carrito(pagina):
-    login(pagina, "standard_user", "secret_sauce")
-    pagina.click('[data-test="add-to-cart-sauce-labs-backpack"]')
-    contador = pagina.text_content(".shopping_cart_badge")
-    assert contador == "1", f"Se esperaba '1' pero se obtuvo '{contador}'"
-    print("✅ TEST 1 PASÓ — Producto agregado al carrito, badge muestra 1")
+@pytest.mark.parametrize("usuario, resultado_esperado", [
+    ("standard_user",           "exito"),
+    ("locked_out_user",         "bloqueado"),
+    ("performance_glitch_user", "exito"),
+])
+def test_login(pagina, usuario, resultado_esperado):
+    login(pagina, usuario, "secret_sauce")
+
+    if resultado_esperado == "exito":
+        assert "/inventory.html" in pagina.url, (
+            f"'{usuario}' no redirigió a inventory"
+        )
+        print(f"✅ Login exitoso con '{usuario}'")
+    else:
+        error = texto_error(pagina)
+        assert error is not None, f"'{usuario}' debía mostrar error pero no lo hizo"
+        assert "locked out" in error.lower()
+        print(f"✅ Login bloqueado correctamente para '{usuario}'")
 
 
 # ─── Test 2: Login con contraseña incorrecta ────────────────────────────────────
@@ -33,14 +46,14 @@ def test_login_contrasena_incorrecta(pagina):
     print("✅ TEST 2 PASÓ — Se muestra error de credenciales inválidas")
 
 
-# ─── Test 3: Login con usuario bloqueado ────────────────────────────────────────
+# ─── Test 3: Producto al carrito ────────────────────────────────────────────────
 
-def test_login_usuario_bloqueado(pagina):
-    login(pagina, "locked_out_user", "secret_sauce")
-    error = texto_error(pagina)
-    assert error is not None, "No apareció el mensaje de error"
-    assert "locked out" in error.lower()
-    print("✅ TEST 3 PASÓ — Se muestra error de usuario bloqueado")
+def test_agregar_producto_al_carrito(pagina):
+    login(pagina, "standard_user", "secret_sauce")
+    pagina.click('[data-test="add-to-cart-sauce-labs-backpack"]')
+    contador = pagina.text_content(".shopping_cart_badge")
+    assert contador == "1", f"Se esperaba '1' pero se obtuvo '{contador}'"
+    print("✅ TEST 3 PASÓ — Producto agregado al carrito, badge muestra 1")
 
 
 # ─── Test 4: Compra completa hasta el "Thank you" ──────────────────────────────
