@@ -25,6 +25,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# Reportes HTML generados
+reports/
+
 # Pytest
 .pytest_cache/
 **/pytest_cache/
