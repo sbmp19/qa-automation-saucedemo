@@ -1,6 +1,7 @@
 """Configuración global de pytest: fixture del navegador y captura de screenshots."""
 
 import base64
+import os
 
 import pytest
 from playwright.sync_api import sync_playwright
@@ -8,9 +9,11 @@ from playwright.sync_api import sync_playwright
 
 @pytest.fixture
 def pagina():
-    """Abre una página nueva en Chromium para cada test y la cierra al final."""
+    """Abre una página nueva en Chromium para cada test y la cierra al final.
+    En CI (GitHub Actions) corre en modo headless automáticamente."""
+    headless = os.environ.get("CI") is not None
     with sync_playwright() as p:
-        navegador = p.chromium.launch(headless=False)
+        navegador = p.chromium.launch(headless=headless)
         page = navegador.new_page()
         page.goto("https://www.saucedemo.com")
         yield page
