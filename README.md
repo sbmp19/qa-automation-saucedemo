@@ -15,9 +15,11 @@ Suite de **tests funcionales automatizados** para [SauceDemo](https://www.sauced
 El proyecto cubre escenarios reales de un flujo de compra online:
 
 - Login exitoso y fallido (distintos tipos de usuario)
-- Agregar productos al carrito
+- Agregar y quitar productos del carrito
 - Checkout completo con confirmación de orden
 - Validación de mensajes de error y navegación
+- Ordenamiento de productos por precio
+- Validación de campos obligatorios en checkout
 
 > Proyecto creado con fines de portafolio para demostrar habilidades en **QA Automation**, **Playwright** y **Python**.
 
@@ -25,14 +27,20 @@ El proyecto cubre escenarios reales de un flujo de compra online:
 
 ## 📋 Tests incluidos
 
-| # | Test | Escenario | Verificación |
-|---|------|-----------|-------------|
-| 1 | `test_login[standard_user-exito]` | Login correcto con `standard_user` | Redirige a `/inventory.html` |
-| 2 | `test_login[locked_out_user-bloqueado]` | Login con `locked_out_user` | Muestra error de usuario bloqueado |
-| 3 | `test_login[performance_glitch_user-exito]` | Login correcto con `performance_glitch_user` (usuario lento) | Redirige a `/inventory.html` |
-| 4 | `test_login_contrasena_incorrecta` | Login con contraseña errónea | Muestra error `"Username and password do not match"` |
-| 5 | `test_agregar_producto_al_carrito` | Login → agregar producto al carrito | Badge del carrito muestra `1` |
-| 6 | `test_compra_completa` | Login → agregar producto → checkout completo → confirmar | Muestra `"Thank you for your order"` |
+| # | Archivo | Test | Escenario | Verificación |
+|---|---------|------|-----------|-------------|
+| 1 | `test_saucedemo.py` | `test_login[standard_user-exito]` | Login correcto con `standard_user` | Redirige a `/inventory.html` |
+| 2 | `test_saucedemo.py` | `test_login[locked_out_user-bloqueado]` | Login con `locked_out_user` | Muestra error de usuario bloqueado |
+| 3 | `test_saucedemo.py` | `test_login[performance_glitch_user-exito]` | Login correcto con `performance_glitch_user` (usuario lento) | Redirige a `/inventory.html` |
+| 4 | `test_saucedemo.py` | `test_login_contrasena_incorrecta` | Login con contraseña errónea | Muestra error `"Username and password do not match"` |
+| 5 | `test_saucedemo.py` | `test_agregar_producto_al_carrito` | Login → agregar producto al carrito | Badge del carrito muestra `1` |
+| 6 | `test_saucedemo.py` | `test_compra_completa` | Login → agregar producto → checkout completo → confirmar | Muestra `"Thank you for your order"` |
+| 7 | `test_ordenamiento.py` | `test_ordenar_precio_menor_a_mayor` | Ordenar productos por precio ascendente | Todos los precios están ordenados de menor a mayor |
+| 8 | `test_ordenamiento.py` | `test_ordenar_precio_mayor_a_menor` | Ordenar productos por precio descendente | Todos los precios están ordenados de mayor a menor |
+| 9 | `test_checkout_validacion.py` | `test_nombre_vacio` | Checkout con nombre vacío | Muestra error `"First Name is required"` |
+| 10 | `test_checkout_validacion.py` | `test_apellido_vacio` | Checkout con apellido vacío | Muestra error `"Last Name is required"` |
+| 11 | `test_checkout_validacion.py` | `test_codigo_postal_vacio` | Checkout con código postal vacío | Muestra error `"Postal Code is required"` |
+| 12 | `test_carrito.py` | `test_agregar_tres_y_quitar_uno` | Agregar 3 productos, quitar 1 desde el carrito | Badge pasa de `3` a `2` |
 
 > Los tests 1-3 usan `@pytest.mark.parametrize`: un mismo test ejecutado con 3 combinaciones distintas de datos.
 
@@ -57,14 +65,23 @@ El proyecto cubre escenarios reales de un flujo de compra online:
 .
 ├── .github/
 │   └── workflows/
-│       └── ci.yml              # Workflow de CI (push a main)
+│       └── ci.yml                # Workflow de CI (push a main)
+├── pages/                        # Page Object Model
+│   ├── base_page.py              # Clase base con método texto_error()
+│   ├── login_page.py             # LoginPage: selectores y acciones de login
+│   ├── inventory_page.py         # InventoryPage: ordenamiento, carrito, precios
+│   ├── cart_page.py              # CartPage: remover productos, ir a checkout
+│   └── checkout_page.py          # CheckoutPage: formulario y confirmación
 ├── tests/
-│   ├── conftest.py              # Fixture del navegador + screenshot en fallos
-│   └── test_saucedemo.py        # Tests parametrizados y funcionales
-├── reports/                     # Reporte HTML generado (ignorado por git)
-├── pytest.ini                   # Configuración por defecto de pytest
-├── requirements.txt             # Dependencias del proyecto
-├── run_tests.sh                 # Script para correr tests y abrir reporte
+│   ├── conftest.py               # Fixture del navegador + screenshot en fallos
+│   ├── test_saucedemo.py         # Tests de login, carrito y compra completa
+│   ├── test_ordenamiento.py      # Tests de ordenamiento por precio
+│   ├── test_checkout_validacion.py  # Tests de validación de checkout
+│   └── test_carrito.py           # Tests de gestión del carrito
+├── reports/                      # Reporte HTML generado (ignorado por git)
+├── pytest.ini                    # Configuración por defecto de pytest
+├── requirements.txt              # Dependencias del proyecto
+├── run_tests.sh                  # Script para correr tests y abrir reporte
 ├── .gitignore
 └── README.md
 ```
@@ -149,14 +166,20 @@ Para descargar el reporte desde GitHub: entrar al workflow run → sección **Ar
 ```
 $ pytest -v
 
-tests/test_saucedemo.py::test_login[standard_user-exito]                PASSED
-tests/test_saucedemo.py::test_login[locked_out_user-bloqueado]          PASSED
-tests/test_saucedemo.py::test_login[performance_glitch_user-exito]      PASSED
-tests/test_saucedemo.py::test_login_contrasena_incorrecta               PASSED
-tests/test_saucedemo.py::test_agregar_producto_al_carrito               PASSED
-tests/test_saucedemo.py::test_compra_completa                           PASSED
+tests/test_carrito.py::TestCarrito::test_agregar_tres_y_quitar_uno             PASSED
+tests/test_checkout_validacion.py::TestCheckoutValidacion::test_nombre_vacio   PASSED
+tests/test_checkout_validacion.py::TestCheckoutValidacion::test_apellido_vacio PASSED
+tests/test_checkout_validacion.py::TestCheckoutValidacion::test_codigo_postal_vacio PASSED
+tests/test_ordenamiento.py::TestOrdenamiento::test_ordenar_precio_menor_a_mayor PASSED
+tests/test_ordenamiento.py::TestOrdenamiento::test_ordenar_precio_mayor_a_menor PASSED
+tests/test_saucedemo.py::test_login[standard_user-exito]                      PASSED
+tests/test_saucedemo.py::test_login[locked_out_user-bloqueado]                PASSED
+tests/test_saucedemo.py::test_login[performance_glitch_user-exito]            PASSED
+tests/test_saucedemo.py::test_login_contrasena_incorrecta                     PASSED
+tests/test_saucedemo.py::test_agregar_producto_al_carrito                     PASSED
+tests/test_saucedemo.py::test_compra_completa                                 PASSED
 
-============================== 6 passed in 11.62s ==============================
+============================== 12 passed in 19.45s ==============================
 ```
 
 ---
@@ -173,9 +196,10 @@ Este proyecto fue creado como parte de mi portafolio de **QA Automation**. El ob
 
 - Automatización de pruebas end-to-end con **Playwright** y **Python**
 - Diseño de tests **data-driven** con `@pytest.mark.parametrize`
+- Patrón **Page Object Model (POM)** para mantener tests mantenibles y reutilizables
 - Configuración de **CI/CD** con GitHub Actions
 - Generación de reportes visuales con **pytest-html**
-- Buenas prácticas: fixtures, hooks, helpers reutilizables, y organización de proyecto
+- Buenas prácticas: fixtures, hooks, page objects, y organización de proyecto
 
 ---
 
