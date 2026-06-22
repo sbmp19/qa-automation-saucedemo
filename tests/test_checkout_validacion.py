@@ -1,7 +1,10 @@
 """Tests de validación del formulario de checkout."""
 
 import pytest
-from helpers import login, texto_error
+from pages.login_page import LoginPage
+from pages.inventory_page import InventoryPage
+from pages.cart_page import CartPage
+from pages.checkout_page import CheckoutPage
 
 
 class TestCheckoutValidacion:
@@ -9,34 +12,36 @@ class TestCheckoutValidacion:
 
     @pytest.fixture(autouse=True)
     def setup(self, pagina):
-        login(pagina, "standard_user", "secret_sauce")
-        pagina.click('[data-test="add-to-cart-sauce-labs-backpack"]')
-        pagina.click(".shopping_cart_link")
-        pagina.click("#checkout")
+        login_page = LoginPage(pagina)
+        login_page.login("standard_user", "secret_sauce")
+
+        inventory_page = InventoryPage(pagina)
+        inventory_page.add_product_to_cart("sauce-labs-backpack")
+        inventory_page.go_to_cart()
+
+        cart_page = CartPage(pagina)
+        cart_page.go_to_checkout()
 
     def test_nombre_vacio(self, pagina):
-        pagina.fill("#first-name", "")
-        pagina.fill("#last-name", "Meza")
-        pagina.fill("#postal-code", "1234")
-        pagina.click("#continue")
-        error = texto_error(pagina)
+        checkout_page = CheckoutPage(pagina)
+        checkout_page.fill_info("", "Meza", "1234")
+        checkout_page.click_continue()
+        error = checkout_page.texto_error()
         assert error is not None, "No apareció mensaje de error"
         assert "First Name is required" in error
 
     def test_apellido_vacio(self, pagina):
-        pagina.fill("#first-name", "Silvia")
-        pagina.fill("#last-name", "")
-        pagina.fill("#postal-code", "1234")
-        pagina.click("#continue")
-        error = texto_error(pagina)
+        checkout_page = CheckoutPage(pagina)
+        checkout_page.fill_info("Silvia", "", "1234")
+        checkout_page.click_continue()
+        error = checkout_page.texto_error()
         assert error is not None, "No apareció mensaje de error"
         assert "Last Name is required" in error
 
     def test_codigo_postal_vacio(self, pagina):
-        pagina.fill("#first-name", "Silvia")
-        pagina.fill("#last-name", "Meza")
-        pagina.fill("#postal-code", "")
-        pagina.click("#continue")
-        error = texto_error(pagina)
+        checkout_page = CheckoutPage(pagina)
+        checkout_page.fill_info("Silvia", "Meza", "")
+        checkout_page.click_continue()
+        error = checkout_page.texto_error()
         assert error is not None, "No apareció mensaje de error"
         assert "Postal Code is required" in error
