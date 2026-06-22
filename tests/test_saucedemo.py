@@ -1,17 +1,7 @@
 """Tests automatizados para saucedemo.com con Playwright + pytest."""
 
 import pytest
-
-# ─── Helpers ────────────────────────────────────────────────────────────────────
-
-def login(page, usuario, contrasena):
-    page.fill("#user-name", usuario)
-    page.fill("#password", contrasena)
-    page.click("#login-button")
-
-
-def texto_error(page):
-    return page.text_content('[data-test="error"]')
+from helpers import login, texto_error
 
 
 # ─── Test 1: Login data-driven ──────────────────────────────────────────────────
